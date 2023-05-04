@@ -8,6 +8,10 @@ Compared to pre_CT.py, the main difference is the image intensity normalization 
 
 @author: jma
 """
+
+# python pre_MR.py -i /home/mila/a/arkil.patel/scratch/rohan/sam_finetuning/data/Dataset002_spinefmri/imagesTr -gt /home/mila/a/arkil.patel/scratch/rohan/sam_finetuning/data/Dataset002_spinefmri/labelsTr -o /home/mila/a/arkil.patel/scratch/rohan/sam_finetuning/data/Dataset002_spinefmri/preprocessed_data --modality fMRI --anatomy sc --label_id 1.0 --prefix fMRI_sc_
+
+
 #%% import packages
 import numpy as np
 import SimpleITK as sitk
@@ -29,8 +33,8 @@ parser.add_argument('-o', '--npz_path', type=str, default='data/Npz_files', help
 parser.add_argument('--image_size', type=int, default=256, help='image size')
 parser.add_argument('--modality', type=str, default='CT', help='modality')
 parser.add_argument('--anatomy', type=str, default='Abd-Gallbladder', help='anatomy')
-parser.add_argument('--img_name_suffix', type=str, default='_0000.nii.gz', help='image name suffix')
-parser.add_argument('--label_id', type=int, default=9, help='label id')
+parser.add_argument('--img_name_suffix', type=str, default='.nii.gz', help='image name suffix')
+parser.add_argument('--label_id', type=float, default=9, help='label id')
 parser.add_argument('--prefix', type=str, default='CT_Abd-Gallbladder_', help='prefix')
 parser.add_argument('--model_type', type=str, default='vit_b', help='model type')
 parser.add_argument('--checkpoint', type=str, default='work_dir/SAM/sam_vit_b_01ec64.pth', help='checkpoint')
@@ -41,8 +45,8 @@ args = parser.parse_args()
 
 prefix = args.modality + '_' + args.anatomy
 names = sorted(os.listdir(args.gt_path))
-names = [name for name in names if not os.path.exists(join(args.npz_path, prefix + '_' + name.split('.nii.gz')[0]+'.npz'))]
-names = [name for name in names if os.path.exists(join(args.nii_path, name.split('.nii.gz')[0] + args.img_name_suffix))]
+# names = [name for name in names if not os.path.exists(join(args.npz_path, prefix + '_' + name.split('.nii.gz')[0]+'.npz'))]
+# names = [name for name in names if os.path.exists(join(args.nii_path, name.split('.nii.gz')[0] + args.img_name_suffix))]
 
 
 # split names into training and testing
@@ -85,6 +89,7 @@ def preprocess_nonct(gt_path, nii_path, gt_name, image_name, label_id, image_siz
                 assert len(img_slice_i.shape)==3 and img_slice_i.shape[2]==3, 'image should be 3 channels'
                 assert img_slice_i.shape[0]==gt_slice_i.shape[0] and img_slice_i.shape[1]==gt_slice_i.shape[1], 'image and ground truth should have the same size'
                 imgs.append(img_slice_i)
+                # print(imgs)
                 assert np.sum(gt_slice_i)>100, 'ground truth should have more than 100 pixels'
                 gts.append(gt_slice_i)
                 if sam_model is not None:
@@ -117,7 +122,8 @@ sam_model = sam_model_registry[args.model_type](checkpoint=args.checkpoint).to(a
 
 for name in tqdm(train_names):
     image_name = name.split('.nii.gz')[0] + args.img_name_suffix
-    gt_name = name 
+    gt_name = name
+    print(gt_name) 
     imgs, gts, img_embeddings = preprocess_nonct(args.gt_path, args.nii_path, gt_name, image_name, args.label_id, args.image_size, sam_model, args.device)
     #%% save to npz file
     # stack the list to array
